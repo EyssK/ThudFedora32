@@ -1,4 +1,4 @@
---- /home/eyssartk/Dev/qemu-3.0.0/linux-user/syscall.c	2018-08-14 21:10:34.000000000 +0200
+--- ./build-wayland/tmp/work/x86_64-linux/qemu-native/3.0.0-r0/qemu-3.0.0/linux-user/syscall.c	2018-08-14 21:10:34.000000000 +0200
 +++ syscall.c	2020-10-01 22:39:28.559164302 +0200
 @@ -37,6 +37,7 @@
  #include <sched.h>
