@@ -1,0 +1,65 @@
+--- /home/eyssartk/Dev/qemu-3.0.0/linux-user/syscall.c	2018-08-14 21:10:34.000000000 +0200
++++ syscall.c	2020-10-01 22:39:28.559164302 +0200
+@@ -37,6 +37,7 @@
+ #include <sched.h>
+ #include <sys/timex.h>
+ #include <sys/socket.h>
++#include <linux/sockios.h>
+ #include <sys/un.h>
+ #include <sys/uio.h>
+ #include <poll.h>
+@@ -250,15 +251,8 @@
+ #define TARGET_NR__llseek TARGET_NR_llseek
+ #endif
+ 
+-#ifdef __NR_gettid
+-_syscall0(int, gettid)
+-#else
+-/* This is a replacement for the host gettid() and must return a host
+-   errno. */
+-static int gettid(void) {
+-    return -ENOSYS;
+-}
+-#endif
++#define __NR_sys_gettid __NR_gettid
++_syscall0(int, sys_gettid)
+ 
+ /* For the 64-bit guest on 32-bit host case we must emulate
+  * getdents using getdents64, because otherwise the host
+@@ -6529,9 +6520,9 @@
+                mapping.  We can't repeat the spinlock hack used above because
+                the child process gets its own copy of the lock.  */
+             if (flags & CLONE_CHILD_SETTID)
+-                put_user_u32(gettid(), child_tidptr);
++                put_user_u32(sys_gettid(), child_tidptr);
+             if (flags & CLONE_PARENT_SETTID)
+-                put_user_u32(gettid(), parent_tidptr);
++                put_user_u32(sys_gettid(), parent_tidptr);
+             ts = (TaskState *)cpu->opaque;
+             if (flags & CLONE_SETTLS)
+                 cpu_set_tls (env, newtls);
+@@ -8446,10 +8437,12 @@
+ #ifdef TARGET_NR_stime /* not on alpha */
+     case TARGET_NR_stime:
+         {
+-            time_t host_time;
+-            if (get_user_sal(host_time, arg1))
++            struct timespec ts;
++            ts.tv_nsec = 0;
++            if (get_user_sal(ts.tv_sec, arg1)) {
+                 goto efault;
+-            ret = get_errno(stime(&host_time));
++            }
++            return get_errno(clock_settime(CLOCK_REALTIME, &ts));
+         }
+         break;
+ #endif
+@@ -11803,7 +11796,7 @@
+         break;
+ #endif
+     case TARGET_NR_gettid:
+-        ret = get_errno(gettid());
++        ret = get_errno(sys_gettid());
+         break;
+ #ifdef TARGET_NR_readahead
+     case TARGET_NR_readahead:
